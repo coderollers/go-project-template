@@ -1,0 +1,33 @@
+# This is Traefik specific, you may need to use your own Ingress Controller specific resources
+{{- if .Values.ingress.enabled -}}
+  {{- $fullName := include "app.fullname" . -}}
+  {{- $svcPort := .Values.service.port -}}
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: {{ $fullName }}
+  labels:
+    {{- include "app.labels" . | nindent 4 }}
+  {{- with .Values.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  routes:
+    - match: Host({{ .Values.ingress.host | quote }}) && PathPrefix({{ .Values.ingress.prefix | quote }})
+      kind: Rule
+      middlewares:
+        - name: sp-{{ $fullName }}
+      services:
+        - name: {{ $fullName }}
+          port: {{ $svcPort }}
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: sp-{{ $fullName }}
+spec:
+  stripPrefix:
+    prefixes:
+      - {{ .Values.ingress.prefix | quote }}
+  {{- end }}

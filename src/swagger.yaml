@@ -1,0 +1,4 @@
+version: 1.0
+title: MY-MICROSERVICE
+description: My awesome microservice
+basepath: /

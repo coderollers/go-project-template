@@ -1,0 +1,92 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "app.fullname" . }}
+  labels:
+    {{- include "app.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "app.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "app.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "app.serviceAccountName" . }}
+      shareProcessNamespace: true
+      containers:
+      - name: {{ .Chart.Name }}
+        securityContext:
+          runAsUser: 1000
+          runAsNonRoot: true
+          readOnlyRootFilesystem: true
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        {{- with .Values.image.args }}
+        args:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+        env:
+          {{- if .Values.ingress.enabled }}
+          - name: INGRESS_PREFIX
+            value: {{ .Values.ingress.prefix | quote}}
+          {{- end }}
+          - name: ENVIRONMENT
+            value: {{ .Values.environment | quote }}
+          - name: JAEGER_ENDPOINT
+            value : {{ .Values.telemetry.jaegerEndpoint | quote }}
+        ports:
+          - name: http
+            containerPort: 8080
+            protocol: TCP
+          - name: loglevel
+            containerPort: 53835
+            protocol: TCP
+        livenessProbe:
+          #TODO: Change this once Actuator is implemented
+          httpGet:
+            path: /loglevel
+            port: 53835
+        readinessProbe:
+          httpGet:
+            path: /loglevel
+            port: 53835
+        resources:
+          {{- toYaml .Values.resources | nindent 12 }}
+      - name: wingman
+        command:
+          - cat
+        securityContext:
+          runAsUser: 0
+          readOnlyRootFilesystem: false
+          capabilities:
+            add:
+            - SYS_PTRACE
+        image: alpine
+        imagePullPolicy: Always
+        stdin: true
+        tty: true
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

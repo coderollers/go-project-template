@@ -1,0 +1,74 @@
+definitions:
+  models.JSONFailureResult:
+    properties:
+      code:
+        example: 400
+        type: integer
+      correlation_id:
+        example: 705e4dcb-3ecd-24f3-3a35-3e926e4bded5
+        type: string
+      data: {}
+      error:
+        example: There was an error processing the request
+        type: string
+      stacktrace:
+        type: string
+    type: object
+  models.JSONNotFoundResult:
+    properties:
+      code:
+        example: 404
+        type: integer
+      correlation_id:
+        example: 705e4dcb-3ecd-24f3-3a35-3e926e4bded5
+        type: string
+      data: {}
+    type: object
+  models.JSONSuccessResult:
+    properties:
+      code:
+        example: 200
+        type: integer
+      correlation_id:
+        example: 705e4dcb-3ecd-24f3-3a35-3e926e4bded5
+        type: string
+      data: {}
+      message:
+        example: Success
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /v1/:
+    get:
+      consumes:
+      - application/json
+      description: Sample GET handler
+      operationId: index-get
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Positive response
+          schema:
+            $ref: '#/definitions/models.JSONSuccessResult'
+        "400":
+          description: The request data could not be processed
+          schema:
+            $ref: '#/definitions/models.JSONFailureResult'
+        "404":
+          description: The object was not found
+          schema:
+            $ref: '#/definitions/models.JSONNotFoundResult'
+        "500":
+          description: An internal error has occurred, most likely due to an uncaught
+            exception
+          schema:
+            $ref: '#/definitions/models.JSONFailureResult'
+        "503":
+          description: An error has occurred, most likely due to an unavailable dependency
+          schema:
+            $ref: '#/definitions/models.JSONFailureResult'
+      summary: Sample GET handler
+swagger: "2.0"
