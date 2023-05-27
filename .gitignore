@@ -26,3 +26,6 @@ go.work
 
 # Goland
 .idea
+
+# Protobuf compiled files, use src/protos/genproto.sh
+*.pb.go

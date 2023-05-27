@@ -27,12 +27,12 @@ func main() {
 	appConfig := configuration.AppConfig()
 
 	// Configure command-line parameters
-	pflag.Int32VarP(&appConfig.CleanupTimeoutSec, "timeout", "t", 60, "Time to wait for graceful shutdown on SIGTERM/SIGINT in seconds. Default: 60")
-	pflag.Int32VarP(&appConfig.HttpPort, "port", "p", 8080, "TCP port for the HTTP listener to bind to. Default: 8080")
+	pflag.Int32VarP(&appConfig.CleanupTimeoutSec, "timeout", "t", appConfig.CleanupTimeoutSec, "Time to wait for graceful shutdown on SIGTERM/SIGINT in seconds. Default: 300")
+	pflag.Int32Var(&appConfig.HttpPort, "http-port", appConfig.HttpPort, "TCP port for the HTTP listener to bind to. Default: 8080")
+	pflag.Int32Var(&appConfig.GrpcPort, "grpc-port", appConfig.GrpcPort, "TCP port for the GRPC listener to bind to. If this matches http-port, GRPC-Web will be enabled. Default: 9000")
 	pflag.BoolVarP(&appConfig.UseSwagger, "swagger", "s", false, "Activate swagger. Do not use this in Production!")
 	pflag.BoolVarP(&appConfig.Development, "devel", "d", false, "Start in development mode. Implies --swagger. Do not use this in Production!")
 	pflag.BoolVarP(&appConfig.GinLogger, "gin-logger", "g", false, "Activate Gin's logger, for debugging. Do not use this in Production!")
-	pflag.StringVarP(&appConfig.UseTelemetry, "telemetry", "r", "", "Activate telemetry local or remote/jaeger")
 	pflag.Parse()
 
 	// Initialize main context and set up cancellation token for SIGINT/SIGQUIT
@@ -54,6 +54,14 @@ func main() {
 	if !appConfig.Development {
 		if appConfig.CleanupTimeoutSec < 120 {
 			log.Warnf("Cleanup timeout is set to %d seconds which might be too small for production mode!", appConfig.CleanupTimeoutSec)
+		}
+
+		if appConfig.HttpPort <= 1024 || appConfig.HttpPort >= 65000 {
+			log.Fatalf("HTTP port is %d but must be higher than 1024 and lower than 65000 for production mode!", appConfig.HttpPort)
+		}
+
+		if appConfig.GrpcPort <= 1024 || appConfig.GrpcPort >= 65000 {
+			log.Fatalf("GRPC port is %d but must be higher than 1024 and lower than 65000 for production mode!", appConfig.GrpcPort)
 		}
 
 		// TEMPLATE: Add more sanity checks here
@@ -85,7 +93,10 @@ func main() {
 
 	// Start the API HTTP Server
 	log.Info("Starting webapi handler")
-	go api.StartGin(ctx)
+	ginRouter := api.SetupGin()
+	grpcServer, grpcWebWrapper := api.StartGrpc(ctx)
+
+	go api.StartHttpServer(ctx, ginRouter, grpcServer, grpcWebWrapper)
 
 	// Block until cancellation signal is received
 	<-ctx.Done()

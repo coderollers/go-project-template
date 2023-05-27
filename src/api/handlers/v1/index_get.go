@@ -1,8 +1,6 @@
 package v1
 
 import (
-	"encoding/json"
-
 	"github.com/coderollers/go-logger"
 	"github.com/coderollers/go-stats/concurrency"
 	"github.com/coderollers/go-utils"
@@ -32,6 +30,7 @@ func IndexGet(c *gin.Context) {
 	var (
 		log           = logger.SugaredLogger().WithContextCorrelationId(c).With("package", "handlers", "action", "GetTask")
 		correlationId = c.MustGet("correlation_id").(string)
+		r             interface{}
 	)
 
 	// Create tracer span
@@ -49,19 +48,20 @@ func IndexGet(c *gin.Context) {
 
 	// Example not found response
 	if responseData == nil {
-		response.NotFoundResponse(c, nil)
+		response.NotFoundResponse(c, r)
+		return // Always return after responding to client!
 	}
 
-	var r interface{}
-
 	// Example failure response
-	err := json.Unmarshal([]byte{1, 0, 1}, r)
+	// err := json.Unmarshal([]byte{1, 0, 1}, r) // Fails
+	var err error // Works
 	if err != nil {
 		response.FailureResponse(c, nil, utils.HttpError{
 			Code:    400,
 			Err:     err,
 			Message: "There was an unexpected error processing the request",
 		})
+		return // Always return after responding to client!
 	}
 
 	// Example positive response

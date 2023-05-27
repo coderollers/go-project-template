@@ -9,7 +9,9 @@ type Configuration struct {
 
 	// Dependencies section
 
-	// JaegerEndpoint of the Jaeger instance where you want to send telemetry data. Optional, see UseTelemetry.
+	// JaegerEndpoint of the Jaeger instance where you want to send telemetry data.
+	// Set to "stdout" for activating standard output telemetry or leave empty to
+	// disable telemetry.
 	JaegerEndpoint string
 
 	// Internal settings section
@@ -21,11 +23,6 @@ type Configuration struct {
 	// Environment is a string representing the environment where the microservice is
 	// deployed, such as "staging" or "production". Optional.
 	Environment string
-	// UseTelemetry sets the behavior of OpenTelemetry.
-	// "remote" will push telemetry data to a OT-compatible server, such as Jaeger. See JaegerEndpoint.
-	// "local" will activate telemetry output on standard output. Do not use in production!
-	// Any other value will disable OpenTelemetry.
-	UseTelemetry string
 	// Development, if true, will activate development features and DEBUG level logs. Do not activate in production!
 	Development bool
 	// GinLogger, if true, will activate Gin's internal logger. Use for debugging
@@ -38,10 +35,18 @@ type Configuration struct {
 
 	// Microservice configuration section
 
-	// HttpPort controls the TCP port that Gin will be listening on for HTTP connections.
+	// HttpPort controls the TCP port that Gin will be listening on for HTTP
+	// connections. Defaults to 8080.
 	HttpPort int32
+	// GrpcPort controls the TCP port that the GRPC services will be available on.
+	// Defaults to 9000. If GrpcPort and HttpPort are the same, then grpc-web
+	// compatibility will be enabled. This will allow you to call the GRPC services
+	// from web clients such as JavaScript and WebAssembly
+	GrpcPort int32
 	// IngressPrefix must match the path which routes requests to this microservice
-	// in your Ingress configuration. See the README for more information.
+	// in your Ingress configuration. Only affects the HTTP server. Note that this
+	// will break your grpc-web endpoints, if grpc-web is enabled! See the README for
+	// more information.
 	IngressPrefix string
 
 	// TEMPLATE: Add more configuration data here or to the above sections to be
@@ -70,4 +75,6 @@ func loadEnvironmentVariables() {
 	appConfig.JaegerEndpoint = utils.EnvOrDefault("JAEGER_ENDPOINT", "")
 	appConfig.IngressPrefix = utils.EnvOrDefault("INGRESS_PREFIX", "")
 	appConfig.CleanupTimeoutSec = utils.EnvOrDefaultInt32("SHUTDOWN_TIMEOUT", 300)
+	appConfig.HttpPort = utils.EnvOrDefaultInt32("HTTP_PORT", 8080)
+	appConfig.GrpcPort = utils.EnvOrDefaultInt32("GRPC_PORT", 9000)
 }

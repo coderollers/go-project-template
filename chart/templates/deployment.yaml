@@ -43,6 +43,10 @@ spec:
           - name: INGRESS_PREFIX
             value: {{ .Values.ingress.prefix | quote}}
           {{- end }}
+          {{- if .Values.service.grpcWeb }}
+          - name: GRPC_PORT
+            value: "8080"
+          {{- end }}
           - name: ENVIRONMENT
             value: {{ .Values.environment | quote }}
           - name: JAEGER_ENDPOINT
@@ -50,6 +54,9 @@ spec:
         ports:
           - name: http
             containerPort: 8080
+            protocol: TCP
+          - name: grpc
+            containerPort: 9000
             protocol: TCP
           - name: loglevel
             containerPort: 53835

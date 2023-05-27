@@ -17,3 +17,25 @@ spec:
       name: http
   selector:
     {{- include "app.selectorLabels" . | nindent 4 }}
+---
+{{- if not .Values.service.grpcWeb }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "app.fullname" . }}-grpc
+  labels:
+    {{- include "app.labels" . | nindent 4 }}
+  {{- with .Values.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: 9000
+      protocol: TCP
+      name: grpc
+  selector:
+    {{- include "app.selectorLabels" . | nindent 4 }}
+  {{- end }}

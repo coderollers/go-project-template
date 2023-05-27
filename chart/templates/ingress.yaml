@@ -1,4 +1,4 @@
-# This is Traefik specific, you may need to use your own Ingress Controller specific resources
+# This is Traefik specific, you may need to use your own Ingress Controller specific resources. GRPC WIP
 {{- if .Values.ingress.enabled -}}
   {{- $fullName := include "app.fullname" . -}}
   {{- $svcPort := .Values.service.port -}}
